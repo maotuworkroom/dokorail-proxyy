@@ -9,20 +9,18 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: inspect main js
+      - name: probe proxy endpoints
         run: |
           set -e
           BASE="https://dokorail-proxy.vercel.app"
-          curl -sS -m 30 -o main.js "$BASE/assets/main-BS8b6Q1W.js"
-          echo "size: $(wc -c < main.js) bytes"
-          echo "=== feeds-related code ==="
-          grep -oE '.{120}/api/feeds.{200}' main.js | head -5
+          echo "== root HTML =="
+          curl -sS -m 20 -o root.html -w "http %{http_code}, %{size_download} bytes\n" "$BASE/"
           echo
-          echo "=== header names near fetch ==="
-          grep -oE '"[Xx]-[A-Za-z-]+"' main.js | sort -u | head -30
+          echo "== live feed JR-East =="
+          curl -sS -m 20 -o feed.json -w "http %{http_code}, %{size_download} bytes\n" \
+            "$BASE/api/feeds?kind=train&operators=JR-East&known=%7B%7D"
+          head -c 300 feed.json; echo
           echo
-          echo "=== train-search / application requests ==="
-          grep -oE '.{80}[Tt]rain-?[Ss]earch.{120}' main.js | head -5
-          echo
-          echo "=== 'Application requests' string location ==="
-          grep -oE '.{60}[Aa]pplication requests.{60}' main.js | head -3
+          echo "== timetable index =="
+          curl -sS -m 30 -o tt.json -w "http %{http_code}, %{size_download} bytes\n" \
+            "$BASE/rail/timetables/startup-v3-index.json"

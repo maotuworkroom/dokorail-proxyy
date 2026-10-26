@@ -1,11 +1,5 @@
 // dokorail-proxy: Vercel edge reverse proxy for dokorail.jp
-//
-// Why: GitHub Actions runner egress IPs get 403'd by dokorail's Cloudflare.
-// Baker traffic goes through this Vercel deployment instead.
-//
-// Note: /api/feeds rejects bare API calls ("Application requests only").
-// The site sets a session cookie on GET / that the API expects back, so
-// for /api/* paths we first warm up the root page and replay its cookies.
+// Mirrors baker/common.py http_get: UA + X-Train-Search only, no extras.
 
 const UPSTREAM = process.env.UPSTREAM || "https://dokorail.jp";
 
@@ -26,42 +20,14 @@ function cacheControlFor(pathname) {
   return "public, max-age=0, s-maxage=0, must-revalidate";
 }
 
-function cookieString(resp) {
-  const arr = typeof resp.headers.getSetCookie === "function"
-    ? resp.headers.getSetCookie()
-    : [];
-  return arr.map((c) => c.split(";")[0]).join("; ");
-}
-
 export default async function handler(req) {
   try {
     const url = new URL(req.url, "https://proxy.local");
     const isApi = url.pathname.startsWith("/api/");
 
-    const headers = {
-      "user-agent": BROWSER_UA,
-      accept: req.headers.get("accept") || "*/*",
-      referer: "https://dokorail.jp/",
-      origin: "https://dokorail.jp",
-      "sec-fetch-dest": isApi ? "empty" : "document",
-      "sec-fetch-mode": isApi ? "cors" : "navigate",
-      "sec-fetch-site": "same-origin",
-    };
+    // Exactly what the baker sends.
+    const headers = { "user-agent": BROWSER_UA };
     if (isApi) headers["x-train-search"] = "1";
-
-    // Warm-up: grab session cookie from root before hitting the API.
-    if (isApi) {
-      try {
-        const warm = await fetch(UPSTREAM + "/", {
-          headers: { "user-agent": BROWSER_UA, accept: "text/html" },
-          redirect: "follow",
-        });
-        const cookies = cookieString(warm);
-        if (cookies) headers["cookie"] = cookies;
-      } catch (_) {
-        /* warm-up failure is non-fatal; try the API call anyway */
-      }
-    }
 
     let upstream;
     try {
@@ -86,7 +52,6 @@ export default async function handler(req) {
         "content-type": contentType,
         "cache-control": cacheControlFor(url.pathname),
         "access-control-allow-origin": "*",
-        "x-proxy-upstream": "dokorail",
       },
     });
   } catch (err) {
