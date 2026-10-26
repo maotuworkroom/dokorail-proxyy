@@ -9,28 +9,12 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: probe proxy endpoints
+      - name: probe direct function
         run: |
           set -e
           BASE="https://dokorail-proxy.vercel.app"
-          echo "== root HTML (expect index.html + geometry hash) =="
-          curl -sS -m 20 -D root.hdr -o root.html -w "http %{http_code}, %{size_download} bytes, %{time_total}s\n" "$BASE/"
-          echo "--- response headers ---"; cat root.hdr
-          echo "--- body head ---"; head -c 300 root.html; echo
+          echo "== direct /api/proxy =="
+          curl -sS -m 20 -D - "$BASE/api/proxy" | head -20
           echo
-          echo "== live feed JR-East (expect JSON, ~KB-MB) =="
-          curl -sS -m 20 -o feed.json -w "http %{http_code}, %{size_download} bytes, %{time_total}s\n" \
-            "$BASE/api/feeds?kind=train&operators=JR-East&known=%7B%7D"
-          head -c 300 feed.json; echo
-          echo
-          echo "== timetable index (expect ~0.5MB JSON) =="
-          curl -sS -m 30 -o tt.json -w "http %{http_code}, %{size_download} bytes, %{time_total}s\n" \
-            "$BASE/rail/timetables/startup-v3-index.json"
-          echo
-          echo "== geometry catalog (expect the sha256 path found above) =="
-          GEO=$(grep -o '/rail/geometry/sha256/[a-f0-9]\{64\}\.json' root.html | head -1)
-          if [ -n "$GEO" ]; then
-            curl -sS -m 30 -o geo.json -w "http %{http_code}, %{size_download} bytes, %{time_total}s\n" "$BASE$GEO"
-          else
-            echo "(no geometry hash found in root)"
-          fi
+          echo "== root (no rewrite now, expect 404) =="
+          curl -sS -m 20 -o /dev/null -w "http %{http_code}\n" "$BASE/"
