@@ -1,0 +1,10 @@
+name: probe-direct
+on: workflow_dispatch
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          BASE="https://dokorail-proxy.vercel.app"
+          echo "== direct /api/proxy =="
+          curl -sS -m 20 -D - "$BASE/api/proxy" | head -25
