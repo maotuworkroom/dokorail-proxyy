@@ -36,6 +36,13 @@ export default async function handler(req) {
     const headers = {
       "user-agent": BROWSER_UA,
       accept: req.headers.get("accept") || "*/*",
+      // dokorail's /api/* rejects calls that don't look like the in-page app:
+      // needs the train-search header + same-origin browser headers.
+      referer: "https://dokorail.jp/",
+      origin: "https://dokorail.jp",
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-origin",
     };
     // dokorail's /api/* rejects requests without this header.
     if (url.pathname.startsWith("/api/")) headers["x-train-search"] = "1";
