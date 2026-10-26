@@ -9,19 +9,20 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: dump root html
+      - name: inspect main js
         run: |
           set -e
           BASE="https://dokorail-proxy.vercel.app"
-          curl -sS -m 20 -o root.html "$BASE/"
-          echo "=== script tags ==="
-          grep -oE '<script[^>]*src="[^"]*"' root.html
+          curl -sS -m 30 -o main.js "$BASE/assets/main-BS8b6Q1W.js"
+          echo "size: $(wc -c < main.js) bytes"
+          echo "=== feeds-related code ==="
+          grep -oE '.{120}/api/feeds.{200}' main.js | head -5
           echo
-          echo "=== inline JS mentioning feeds/train-search/api ==="
-          grep -oE '[^>]*(feeds|train-search|X-Train|api/)[^<]*' root.html | head -20
+          echo "=== header names near fetch ==="
+          grep -oE '"[Xx]-[A-Za-z-]+"' main.js | sort -u | head -30
           echo
-          echo "=== any token/key constants ==="
-          grep -oE '(token|key|auth|app)[^,;]{0,80}' root.html | head -20
+          echo "=== train-search / application requests ==="
+          grep -oE '.{80}[Tt]rain-?[Ss]earch.{120}' main.js | head -5
           echo
-          echo "=== raw head of root.html ==="
-          head -c 3000 root.html
+          echo "=== 'Application requests' string location ==="
+          grep -oE '.{60}[Aa]pplication requests.{60}' main.js | head -3
