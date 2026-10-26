@@ -25,8 +25,13 @@ export default async function handler(req) {
     const url = new URL(req.url, "https://proxy.local");
     const isApi = url.pathname.startsWith("/api/");
 
-    // Exactly what the baker sends.
-    const headers = { "user-agent": BROWSER_UA };
+    // Exactly what the baker sends, plus content negotiation the SPA uses.
+    const headers = {
+      "user-agent": BROWSER_UA,
+      accept: "application/json, text/plain, */*",
+      "accept-language": "ja,en;q=0.9",
+      referer: "https://dokorail.jp/app/",
+    };
     if (isApi) headers["x-train-search"] = "1";
 
     let upstream;
