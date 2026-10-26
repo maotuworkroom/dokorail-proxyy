@@ -9,27 +9,19 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: probe proxy endpoints
+      - name: dump root html
         run: |
           set -e
           BASE="https://dokorail-proxy.vercel.app"
-          echo "== root HTML =="
-          curl -sS -m 20 -o root.html -w "http %{http_code}, %{size_download} bytes, %{time_total}s\n" "$BASE/"
-          grep -o '/rail/geometry/sha256/[a-f0-9]\{64\}\.json' root.html | head -1
+          curl -sS -m 20 -o root.html "$BASE/"
+          echo "=== script tags ==="
+          grep -oE '<script[^>]*src="[^"]*"' root.html
           echo
-          echo "== live feed JR-East =="
-          curl -sS -m 20 -o feed.json -w "http %{http_code}, %{size_download} bytes, %{time_total}s\n" \
-            "$BASE/api/feeds?kind=train&operators=JR-East&known=%7B%7D"
-          head -c 200 feed.json; echo
+          echo "=== inline JS mentioning feeds/train-search/api ==="
+          grep -oE '[^>]*(feeds|train-search|X-Train|api/)[^<]*' root.html | head -20
           echo
-          echo "== timetable index =="
-          curl -sS -m 30 -o tt.json -w "http %{http_code}, %{size_download} bytes, %{time_total}s\n" \
-            "$BASE/rail/timetables/startup-v3-index.json"
+          echo "=== any token/key constants ==="
+          grep -oE '(token|key|auth|app)[^,;]{0,80}' root.html | head -20
           echo
-          echo "== geometry catalog =="
-          GEO=$(grep -o '/rail/geometry/sha256/[a-f0-9]\{64\}\.json' root.html | head -1)
-          if [ -n "$GEO" ]; then
-            curl -sS -m 30 -o geo.json -w "http %{http_code}, %{size_download} bytes, %{time_total}s\n" "$BASE$GEO"
-          else
-            echo "(no geometry hash found)"
-          fi
+          echo "=== raw head of root.html ==="
+          head -c 3000 root.html
