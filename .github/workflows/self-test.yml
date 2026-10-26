@@ -14,8 +14,9 @@ jobs:
           set -e
           BASE="https://dokorail-proxy.vercel.app"
           echo "== root HTML (expect index.html + geometry hash) =="
-          curl -sS -m 20 -o root.html -w "http %{http_code}, %{size_download} bytes, %{time_total}s\n" "$BASE/"
-          grep -o '/rail/geometry/sha256/[a-f0-9]\{64\}\.json' root.html | head -1
+          curl -sS -m 20 -D root.hdr -o root.html -w "http %{http_code}, %{size_download} bytes, %{time_total}s\n" "$BASE/"
+          echo "--- response headers ---"; cat root.hdr
+          echo "--- body head ---"; head -c 300 root.html; echo
           echo
           echo "== live feed JR-East (expect JSON, ~KB-MB) =="
           curl -sS -m 20 -o feed.json -w "http %{http_code}, %{size_download} bytes, %{time_total}s\n" \

@@ -36,41 +36,49 @@ function cacheControlFor(pathname) {
 }
 
 export default async function handler(req) {
-  const url = new URL(req.url, "https://proxy.local");
-  const target = UPSTREAM + url.pathname + url.search;
-
-  const headers = {
-    "user-agent": BROWSER_UA,
-    accept: req.headers.get("accept") || "*/*",
-  };
-  // dokorail's /api/* rejects requests without this header.
-  if (url.pathname.startsWith("/api/")) headers["x-train-search"] = "1";
-
-  let upstream;
   try {
-    upstream = await fetch(target, { headers, redirect: "follow" });
+    const url = new URL(req.url, "https://proxy.local");
+    const target = UPSTREAM + url.pathname + url.search;
+
+    const headers = {
+      "user-agent": BROWSER_UA,
+      accept: req.headers.get("accept") || "*/*",
+    };
+    // dokorail's /api/* rejects requests without this header.
+    if (url.pathname.startsWith("/api/")) headers["x-train-search"] = "1";
+
+    let upstream;
+    try {
+      upstream = await fetch(target, { headers, redirect: "follow" });
+    } catch (err) {
+      return new Response(
+        JSON.stringify({ error: "upstream_unreachable", detail: String(err) }),
+        { status: 502, headers: { "content-type": "application/json" } }
+      );
+    }
+
+    // undici auto-decodes gzip/br, so drop content-encoding/content-length to
+    // keep the baker's own gzip handling consistent.
+    const body = await upstream.arrayBuffer();
+    const contentType =
+      upstream.headers.get("content-type") || "application/octet-stream";
+
+    return new Response(body, {
+      status: upstream.status,
+      headers: {
+        "content-type": contentType,
+        "cache-control": cacheControlFor(url.pathname),
+        "access-control-allow-origin": "*",
+        "x-proxy-upstream": "dokorail",
+        "x-proxy-build": "diag-2",
+      },
+    });
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: "upstream_unreachable", detail: String(err) }),
-      { status: 502, headers: { "content-type": "application/json" } }
-    );
+    return new Response("PROXY-UNCAUGHT: " + (err && err.stack ? err.stack : String(err)), {
+      status: 500,
+      headers: { "content-type": "text/plain" },
+    });
   }
-
-  // undici auto-decodes gzip/br, so drop content-encoding/content-length to
-  // keep the baker's own gzip handling consistent.
-  const body = await upstream.arrayBuffer();
-  const contentType =
-    upstream.headers.get("content-type") || "application/octet-stream";
-
-  return new Response(body, {
-    status: upstream.status,
-    headers: {
-      "content-type": contentType,
-      "cache-control": cacheControlFor(url.pathname),
-      "access-control-allow-origin": "*",
-      "x-proxy-upstream": "dokorail",
-    },
-  });
 }
 
 // Edge runtime: Web Request/Response is guaranteed, global low-latency
