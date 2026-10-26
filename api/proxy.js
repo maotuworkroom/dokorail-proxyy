@@ -73,6 +73,8 @@ export default async function handler(req) {
   });
 }
 
+// Edge runtime: Web Request/Response is guaranteed, global low-latency
+// distribution, fast cold starts — ideal for a pure HTTP proxy.
 export const config = {
-  maxDuration: 10,
+  runtime: "edge",
 };
