@@ -1,0 +1,25 @@
+name: enc2-longline2
+on: workflow_dispatch
+jobs:
+  l100k:
+    runs-on: ubuntu-latest
+    steps:
+      - name: emit 100k line
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          l1 = "MK100K:" + "A"*99989 + ":END"
+          print(l1)
+          print("SHA100K", hashlib.sha256(l1.encode()).hexdigest())
+          PY
+  l500k:
+    runs-on: ubuntu-latest
+    steps:
+      - name: emit 500k line
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          l2 = "MK500K:" + "B"*499989 + ":END"
+          print(l2)
+          print("SHA500K", hashlib.sha256(l2.encode()).hexdigest())
+          PY
