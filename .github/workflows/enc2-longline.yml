@@ -1,0 +1,18 @@
+name: enc2-longline
+on: workflow_dispatch
+jobs:
+  long:
+    runs-on: ubuntu-latest
+    steps:
+      - name: emit long lines
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          l1 = "MK100K:" + "A"*99988 + ":END"
+          l2 = "MK500K:" + "B"*499988 + ":END"
+          assert len(l1)==100000 and len(l2)==500000
+          print(l1)
+          print(l2)
+          print("SHA100K", hashlib.sha256(l1.encode()).hexdigest())
+          print("SHA500K", hashlib.sha256(l2.encode()).hexdigest())
+          PY
