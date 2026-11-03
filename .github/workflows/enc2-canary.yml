@@ -1,0 +1,25 @@
+name: enc2-canary
+on: workflow_dispatch
+jobs:
+  m1-add-mask:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: bash canary/m1.sh
+  m2-sed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: bash canary/m2.sh
+  m3-safelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: bash canary/m3.sh
+  m4-cipher:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - env:
+          DOKORAIL_KEY: ${{ secrets.DOKORAIL_KEY }}
+        run: bash canary/m4.sh
